@@ -57,17 +57,20 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprint(w, `<!doctype html> <html> <head> <title>`+r.URL.Host+`</title>
 	</head>
-	<body>
+	<body style="background-color:black;color:#ccc">
 	<center>
 	<h1> Hello There!</h1>
 	<p>Usage:</p>
 	<pre>This service allows you to store files only 1 day.</pre>
-	<pre>command | curl -F 'file=@-' https://up10.me/upload</pre>
-	<pre>curl -F 'file=@-' https://up10.me/upload < file.xxx</pre>
+	<pre>You can use two different command to send your file</pre>
+	<pre>You can use pipe to redirect your <command> (such as ls, whoami, ps) output to curl</pre>
+	<code style="color:#00FF00">command | curl -F 'file=@-' https://up10.me/upload</code>
+	<pre>Or you can redirect file to curl</pre>
+	<code style="color:#00FF00">curl -F 'file=@-' https://up10.me/upload < file.xxx</code>
 	<pre>Most of the files can be stored such as .png, .jpg, .gif even .pdf</pre>
 	<pre>If you want more filetype please contact us</pre>
-	<a href="https://twitter.com/0xF61">Emirhan KURT</a> <br>
-	<a href="https://twitter.com/mertcangokgoz">Mertcan GÖKGÖZ</a>
+	<a href="https://twitter.com/0xF61" style="color:yellow">Emirhan KURT</a> <br>
+	<a href="https://twitter.com/mertcangokgoz" style="color:yellow">Mertcan GÖKGÖZ</a>
 	</center>
 	</body></html>`)
 
