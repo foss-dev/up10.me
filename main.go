@@ -71,6 +71,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	<pre>If you want more filetype please contact us</pre>
 	<a href="https://twitter.com/0xF61" style="color:yellow">Emirhan KURT</a> <br>
 	<a href="https://twitter.com/mertcangokgoz" style="color:yellow">Mertcan GÖKGÖZ</a>
+	<pre>Or if you antisocial you can directly offer us to PR. </pre>
+	<a href="https://github.com/foss-dev/up10.me" style="color:yellow">Github</a>
 	</center>
 	</body></html>`)
 
