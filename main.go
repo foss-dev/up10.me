@@ -98,17 +98,15 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer formfile.Close()
 
-	buffer, err := ioutil.ReadAll(formfile)
+	ufile := upfile{}
+	ufile.name = uuid.New().String()
+	ufile.content, err = ioutil.ReadAll(formfile)
 	if err != nil {
 		fmt.Fprint(w, err)
 		return
 	}
 
-	ufile := upfile{}
-	ufile.name = uuid.New().String()
-	ufile.content = buffer
-
-	ufile.mime, ufile.ext = mimetype.Detect(buffer)
+	ufile.mime, ufile.ext = mimetype.Detect(ufile.content)
 	if err != nil {
 		fmt.Fprint(w, err)
 		return
