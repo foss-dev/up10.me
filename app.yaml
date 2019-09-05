@@ -13,10 +13,11 @@
 # limitations under the License.
 
 runtime: go
-api_version: go112
+api_version: go1
+runtime: go111
 
 handlers:
 - url: /s
   static_dir: s
 - url: /.*
-  script: main.go
+  script: auto
