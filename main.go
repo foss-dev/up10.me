@@ -117,14 +117,13 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch ufile.ext {
-	case "png", "jpg", "gif", "webp", "bmp", "ico", "svg", "pdf", "txt":
+	case "png", "jpg", "gif", "webp", "webm", "bmp", "ico", "svg", "pdf", "txt", "xml", "php":
 		if err := writeToCloudStorage(r, &ufile); err != nil {
 			fmt.Fprint(w, err)
 			return
 		}
 		fmt.Fprint(w, ufile.URL(r), "\n")
-
-	case "html", "php":
+	case "html":
 		fmt.Fprint(w, "Wowowow H4x0r.")
 	default:
 		fmt.Fprint(w, fmt.Sprintf("Please contact us for %s", ufile.ext))
