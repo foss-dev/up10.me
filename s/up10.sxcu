@@ -1,0 +1,12 @@
+﻿{
+  "Version": "12.4.1",
+  "Name": "up10",
+  "DestinationType": "ImageUploader",
+  "RequestMethod": "POST",
+  "RequestURL": "https://up10.me/upload",
+  "Headers": {
+    "User-Agent": "curl"
+  },
+  "Body": "MultipartFormData",
+  "FileFormName": "file"
+}

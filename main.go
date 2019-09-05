@@ -56,6 +56,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprint(w, `<!doctype html> <html> <head> <title>`+r.URL.Host+`</title>
+	<link rel="shortcut icon" type="image/png" href="/s/favicon.png"/>
 	</head>
 	<body style="background-color:black;color:#ccc">
 	<center>
@@ -68,10 +69,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	<pre>Or you can redirect file to curl</pre>
 	<code style="color:#00FF00">curl -F 'file=@-' https://up10.me/upload < file.xxx</code>
 	<pre>Most of the files can be stored such as .png, .jpg, .gif even .pdf</pre>
-	<pre>If you want more filetype please contact us</pre>
+	<h3>If you use ShareX you can use these configs</h3>
+	<a href="https://getsharex.com/" style="color:yellow">You can get ShareX here</a> <br>
+	<a href="/s/up10.sxcu" style="color:yellow">Image configuration</a> <br>
+	<a href="/s/up10-file.sxcu" style="color:yellow">File configuration</a> <br>
+	<h3>If you want more filetype please contact us</h3>
 	<a href="https://twitter.com/0xF61" style="color:yellow">Emirhan KURT</a> <br>
 	<a href="https://twitter.com/mertcangokgoz" style="color:yellow">Mertcan GÖKGÖZ</a>
-	<pre>Or if you antisocial you can directly offer us to PR. </pre>
+	<h3>Or if you antisocial you can directly offer us to PR.</h3>
 	<a href="https://github.com/foss-dev/up10.me" style="color:yellow">Github</a>
 	</center>
 	</body></html>`)
@@ -105,10 +110,10 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	_, ext = mimetype.Detect([]byte(contents))
 
 	switch ext {
-	case "png", "jpg", "gif", "webp", "bmp", "ico", "svg":
+	case "png", "jpg", "bmp", "ico", "svg", "webp":
 		fmt.Fprint(w, "https://"+r.URL.Host+"/b/"+fileName+"."+ext)
 		writeToCloudStorage(r, contents, fileName, ext)
-	case "pdf", "txt":
+	case "pdf", "txt", "mp4", "webm", "gif":
 		fmt.Fprint(w, "https://"+r.URL.Host+"/b/"+fileName+"."+ext)
 		writeToCloudStorage(r, contents, fileName, ext)
 	case "html", "php":

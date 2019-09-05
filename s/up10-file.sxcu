@@ -1,0 +1,12 @@
+﻿{
+  "Version": "13.0.1",
+  "Name": "up10-file",
+  "DestinationType": "FileUploader",
+  "RequestMethod": "POST",
+  "RequestURL": "https://up10.me/upload",
+  "Headers": {
+    "User-Agent": "curl"
+  },
+  "Body": "MultipartFormData",
+  "FileFormName": "file"
+}
