@@ -61,14 +61,15 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprint(w, `<!doctype html> <html> <head> <title>`+r.Host+`</title>
+	<link rel="shortcut icon" type="image/png" href="/s/favicon.png"/>
 	</head>
 	<body style="background-color:black;color:#ccc">
 	<center>
 	<h1> Hello There!</h1>
-	<p>Usage:</p>
 	<pre>This service allows you to store files only 1 day.</pre>
+	<b>Usage:</b>
 	<pre>You can use two different command to send your file</pre>
-	<pre>You can use pipe to redirect your <command> (such as ls, whoami, ps) output to curl</pre>
+	<pre>You can either use pipe to redirect your command (such as ls, whoami, ps) output to curl</pre>
 	<code style="color:#00FF00">command | curl -F 'file=@-' https://`+r.Host+`/</code>
 	<pre>Or you can redirect file to curl</pre>
 	<code style="color:#00FF00">curl -F 'file=@-' https://`+r.Host+`/ < file.xxx</code>
@@ -117,14 +118,12 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch ufile.ext {
-	case "png", "jpg", "gif", "webp", "webm", "bmp", "ico", "svg", "pdf", "txt", "xml", "php":
+	case "png", "jpg", "gif", "webp", "webm", "bmp", "ico", "svg", "pdf", "txt", "xml", "html", "php":
 		if err := writeToCloudStorage(r, &ufile); err != nil {
 			fmt.Fprint(w, err)
 			return
 		}
 		fmt.Fprint(w, ufile.URL(r), "\n")
-	case "html":
-		fmt.Fprint(w, "Wowowow H4x0r.")
 	default:
 		fmt.Fprint(w, fmt.Sprintf("Please contact us for %s", ufile.ext))
 	}
@@ -205,8 +204,14 @@ func readFromCloudStorage(r *http.Request, w http.ResponseWriter, fileName strin
 	if err != nil {
 		fmt.Fprint(w, err)
 	}
-	mime, _ := mimetype.Detect(slurp)
-	w.Header().Add("Content-Type", mime)
+	mime, ext := mimetype.Detect(slurp)
+
+	switch ext {
+	case "html", "php":
+		w.Header().Add("Content-Type", "text/plain")
+	default:
+		w.Header().Add("Content-Type", mime)
+	}
 	fmt.Fprintf(w, "%s", slurp)
 	return nil
 }
