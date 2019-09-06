@@ -118,7 +118,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch ufile.ext {
-	case "png", "jpg", "gif", "webp", "webm", "bmp", "ico", "svg", "pdf", "txt", "xml", "html", "php", "epub":
+	case "png", "jpg", "gif", "webp", "webm", "bmp", "ico", "svg", "pdf", "txt", "xml", "html", "php", "epub", "json":
 		if err := writeToCloudStorage(r, &ufile); err != nil {
 			fmt.Fprint(w, err)
 			return
