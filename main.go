@@ -112,20 +112,16 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ufile.mime, ufile.ext = mimetype.Detect(ufile.content)
-	if err != nil {
-		fmt.Fprint(w, err)
-		return
-	}
 
 	switch ufile.ext {
-	case "png", "jpg", "gif", "webp", "webm", "bmp", "ico", "svg", "pdf", "txt", "xml", "html", "php", "epub", "json":
+	case "exe", "jar", "deb", "xlf", "": // We don't want to allow this ext
+		fmt.Fprint(w, fmt.Sprintf("Please contact us for %s", ufile.ext))
+	default:
 		if err := writeToCloudStorage(r, &ufile); err != nil {
 			fmt.Fprint(w, err)
 			return
 		}
 		fmt.Fprint(w, ufile.URL(r), "\n")
-	default:
-		fmt.Fprint(w, fmt.Sprintf("Please contact us for %s", ufile.ext))
 	}
 }
 
@@ -187,11 +183,7 @@ func readFromCloudStorage(r *http.Request, w http.ResponseWriter, fileName strin
 		return err
 	}
 
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		log.Errorf(ctx, "failed to get default GCS bucket name: %v", err)
-		return err
-	}
+	client, _ := storage.NewClient(ctx)
 	defer client.Close()
 
 	bucket := client.Bucket(bucketName)
@@ -207,7 +199,7 @@ func readFromCloudStorage(r *http.Request, w http.ResponseWriter, fileName strin
 	mime, ext := mimetype.Detect(slurp)
 
 	switch ext {
-	case "html", "php":
+	case "html", "py", "php", "js", "pl", "lua", "wasm", "eot", "shx", "shp", "dbf", "dcm":
 		w.Header().Add("Content-Type", "text/plain")
 	default:
 		w.Header().Add("Content-Type", mime)
