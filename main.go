@@ -166,7 +166,7 @@ func writeToCloudStorage(r *http.Request, ufile *upfile) error {
 	bucket := client.Bucket(bucketName)
 	wc := bucket.Object(ufile.FileName()).NewWriter(ctx)
 	wc.ContentType = ufile.mime
-	wc.ContentDisposition = ufile.origName + "." + ufile.ext
+	wc.ContentDisposition = ufile.origName // + "." + ufile.ext   not sure here
 
 	size, err := wc.Write(ufile.content)
 	if err != nil {
@@ -212,7 +212,7 @@ func readFromCloudStorage(r *http.Request, w http.ResponseWriter, fileName strin
 	CD := o.ContentDisposition
 
 	// It can be shortuuid but nothing wrong about it
-	w.Header().Add("Content-Disposition", "filename="+string(CD))
+	w.Header().Add("Content-Disposition", "filename=\""+string(CD)+"\"")
 
 	switch ext {
 	case "html", "py", "php", "js", "pl", "lua", "wasm", "eot", "shx", "shp", "dbf", "dcm":
