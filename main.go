@@ -22,7 +22,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/gabriel-vasile/mimetype"
-	"github.com/google/uuid"
+	"github.com/lithammer/shortuuid"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/file"
 	"google.golang.org/appengine/log"
@@ -104,7 +104,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	defer formfile.Close()
 
 	ufile := upfile{}
-	ufile.name = uuid.New().String()
+	ufile.name = shortuuid.New()
 	ufile.content, err = ioutil.ReadAll(formfile)
 	if err != nil {
 		fmt.Fprint(w, err)
