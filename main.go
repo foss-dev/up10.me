@@ -29,10 +29,11 @@ import (
 )
 
 type upfile struct {
-	name    string
-	ext     string
-	mime    string
-	content []byte
+	name     string
+	origName string
+	ext      string
+	mime     string
+	content  []byte
 }
 
 func (u *upfile) FileName() string {
@@ -96,7 +97,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	formfile, _, err := r.FormFile("file")
+	formfile, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
@@ -106,6 +107,12 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	ufile := upfile{}
 	ufile.name = shortuuid.New()
 	ufile.content, err = ioutil.ReadAll(formfile)
+	if fileHeader.Filename == "-" {
+		ufile.origName = ufile.name
+	} else {
+		ufile.origName = fileHeader.Filename
+	}
+
 	if err != nil {
 		fmt.Fprint(w, err)
 		return
@@ -159,6 +166,7 @@ func writeToCloudStorage(r *http.Request, ufile *upfile) error {
 	bucket := client.Bucket(bucketName)
 	wc := bucket.Object(ufile.FileName()).NewWriter(ctx)
 	wc.ContentType = ufile.mime
+	wc.ContentDisposition = ufile.origName + "." + ufile.ext
 
 	size, err := wc.Write(ufile.content)
 	if err != nil {
@@ -187,7 +195,8 @@ func readFromCloudStorage(r *http.Request, w http.ResponseWriter, fileName strin
 	defer client.Close()
 
 	bucket := client.Bucket(bucketName)
-	rc, err := bucket.Object(fileName).NewReader(ctx)
+	bucketObject := bucket.Object(fileName)
+	rc, err := bucketObject.NewReader(ctx)
 	if err != nil {
 		return err
 	}
@@ -197,6 +206,13 @@ func readFromCloudStorage(r *http.Request, w http.ResponseWriter, fileName strin
 		fmt.Fprint(w, err)
 	}
 	mime, ext := mimetype.Detect(slurp)
+
+	// Grab ContentDisposition
+	o, _ := bucketObject.Attrs(ctx)
+	CD := o.ContentDisposition
+
+	// It can be shortuuid but nothing wrong about it
+	w.Header().Add("Content-Disposition", "filename="+string(CD))
 
 	switch ext {
 	case "html", "py", "php", "js", "pl", "lua", "wasm", "eot", "shx", "shp", "dbf", "dcm":
