@@ -1,68 +1,70 @@
-// Copyright 2019 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/lithammer/shortuuid"
 	"google.golang.org/appengine"
-	"google.golang.org/appengine/file"
-	"google.golang.org/appengine/log"
 )
 
 type upfile struct {
 	name     string
 	origName string
 	ext      string
-	mime     string
 	content  []byte
 }
 
-func (u *upfile) FileName() string {
-	return fmt.Sprintf("%s.%s", u.name, u.ext)
-}
+var (
+	storageClient *storage.Client
+	// Set this in app.yaml when running in production.
+	bucketName = os.Getenv("GCLOUD_STORAGE_BUCKET")
+)
 
 func (u *upfile) URL(r *http.Request) string {
-	return fmt.Sprintf("https://%s/b/%s.%s", r.Host, u.name, u.ext)
+	return fmt.Sprintf("https://%s/b/%s%s", r.Host, u.name, u.ext)
+}
+func (u *upfile) FileName() string {
+	return fmt.Sprintf("%s%s", u.name, u.ext)
 }
 
 func main() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/b/", binHandler)
 	http.HandleFunc("/upload", uploadHandler)
-	appengine.Main()
-}
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("Defaulting to port %s", port)
+	}
+
+	log.Printf("Listening on port %s", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
+}
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
+
 	// They don't have to post only /upload path.
 	if r.Method == "POST" {
 		uploadHandler(w, r)
 		return
 	}
+
 	fmt.Fprint(w, `<!doctype html> <html> <head> <title>`+r.Host+`</title>
 	<link rel="shortcut icon" type="image/png" href="/s/favicon.png"/>
+	<!-- Latest Deploy: Wed 05 Feb 2020 07:12:27 PM +03 -->
 	</head>
 	<body style="background-color:black;color:#ccc">
 	<center>
@@ -118,20 +120,19 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ufile.mime, ufile.ext = mimetype.Detect(ufile.content)
+	ufile.ext = mimetype.Detect(ufile.content).Extension()
 
 	switch ufile.ext {
 	case "exe", "jar", "deb", "xlf", "": // We don't want to allow this ext
 		fmt.Fprint(w, fmt.Sprintf("Please contact us for %s", ufile.ext))
 	default:
-		if err := writeToCloudStorage(r, &ufile); err != nil {
+		if err := writeToCloudStorage(w, r, &ufile); err != nil {
 			fmt.Fprint(w, err)
 			return
 		}
 		fmt.Fprint(w, ufile.URL(r), "\n")
 	}
 }
-
 func binHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path[0:3] != "/b/" {
 		http.NotFound(w, r)
@@ -146,50 +147,35 @@ func binHandler(w http.ResponseWriter, r *http.Request) {
 	readFromCloudStorage(r, w, fileName)
 }
 
-func writeToCloudStorage(r *http.Request, ufile *upfile) error {
+func writeToCloudStorage(w http.ResponseWriter, r *http.Request, ufile *upfile) error {
 	ctx := appengine.NewContext(r)
-
-	// determine default bucket name
-	bucketName, err := file.DefaultBucketName(ctx)
-	if err != nil {
-		log.Errorf(ctx, "failed to get default GCS bucket name: %v", err)
-		return err
-	}
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		log.Errorf(ctx, "failed to get default GCS bucket name: %v", err)
+		log.Println(ctx, "failed to get default GCS bucket name: %v", err)
 		return err
 	}
 	defer client.Close()
 
 	bucket := client.Bucket(bucketName)
 	wc := bucket.Object(ufile.FileName()).NewWriter(ctx)
-	wc.ContentType = ufile.mime
 	wc.ContentDisposition = ufile.origName // + "." + ufile.ext   not sure here
 
 	size, err := wc.Write(ufile.content)
 	if err != nil {
-		log.Errorf(ctx, "createFile: unable to write bucket %q, file: %s Size:%d, %v", bucket, ufile.FileName(), size, err)
+		log.Println(ctx, "createFile: unable to write bucket %q, file: %s Size:%d, %v", bucket, ufile.FileName(), size, err)
 		return err
 	}
 
 	if err := wc.Close(); err != nil {
-		log.Errorf(ctx, "createFile: unable to close bucket %q, file %q: %v", bucket, ufile.FileName(), err)
+		log.Println(ctx, "createFile: unable to close bucket %q, file %q: %v", bucket, ufile.FileName(), err)
 		return err
 	}
 	return nil
-}
 
+}
 func readFromCloudStorage(r *http.Request, w http.ResponseWriter, fileName string) error {
 	ctx := appengine.NewContext(r)
-
-	// determine default bucket name
-	bucketName, err := file.DefaultBucketName(ctx)
-	if err != nil {
-		log.Errorf(ctx, "failed to get default GCS bucket name: %v", err)
-		return err
-	}
 
 	client, _ := storage.NewClient(ctx)
 	defer client.Close()
@@ -198,14 +184,15 @@ func readFromCloudStorage(r *http.Request, w http.ResponseWriter, fileName strin
 	bucketObject := bucket.Object(fileName)
 	rc, err := bucketObject.NewReader(ctx)
 	if err != nil {
-		return err
+		fmt.Println(err)
 	}
 	defer rc.Close()
+
 	slurp, err := ioutil.ReadAll(rc)
 	if err != nil {
 		fmt.Fprint(w, err)
 	}
-	mime, ext := mimetype.Detect(slurp)
+	ext := mimetype.Detect(slurp)
 
 	// Grab ContentDisposition
 	o, _ := bucketObject.Attrs(ctx)
@@ -214,11 +201,11 @@ func readFromCloudStorage(r *http.Request, w http.ResponseWriter, fileName strin
 	// It can be shortuuid but nothing wrong about it
 	w.Header().Add("Content-Disposition", "filename=\""+string(CD)+"\"")
 
-	switch ext {
-	case "html", "py", "php", "js", "pl", "lua", "wasm", "eot", "shx", "shp", "dbf", "dcm":
+	switch ext.Extension() {
+	case ".html", ".py", ".js", ".wasm":
 		w.Header().Add("Content-Type", "text/plain")
 	default:
-		w.Header().Add("Content-Type", mime)
+		w.Header().Add("Content-Type", ext.Parent().String())
 	}
 	fmt.Fprintf(w, "%s", slurp)
 	return nil
