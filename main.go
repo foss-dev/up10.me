@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/lithammer/shortuuid"
 	"google.golang.org/appengine"
 )
+
+var tmpHTMLPage []byte
 
 type upfile struct {
 	name     string
@@ -36,6 +37,12 @@ func (u *upfile) FileName() string {
 }
 
 func main() {
+	var err error
+	tmpHTMLPage, err = ioutil.ReadFile("s/index.html")
+	if err != nil {
+		log.Println("Template file couldn't found")
+	}
+
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/b/", binHandler)
 	http.HandleFunc("/upload", uploadHandler)
@@ -63,77 +70,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, `<!DOCTYPE html>
-<!-- Latest build `+time.Now().Format(time.UnixDate)+`-->
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>`+r.Host+`</title>
-  <link rel="stylesheet" href="/s/main.css">
-  <link rel="shortcut icon" type="image/png" href="/s/favicon.png"/>
-  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
-	<script>
-
-function uploadFile(){
-  const file = document.getElementById('file').files[0]
-  if(file.size <= 10485760){
-  var fd = new FormData();
-  fd.append("file", file);
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/upload', true);
-
-  xhr.upload.onprogress = function(e) {
-    if (e.lengthComputable) {
-      var percentComplete = (e.loaded / e.total) * 100;
-      console.log(percentComplete + '% uploaded');
-      document.getElementById('text').innerHTML = Math.round(percentComplete) + '% uploaded';
-    }
-  };
-
-  xhr.onload = function() {
-    if (this.status == 200) {
-      document.getElementById('info').innerHTML = this.response.link(this.response);
-			var element = document.getElementById("upten");
-			element.parentNode.removeChild(element);
-    };
-  };
-
-  xhr.send(fd);
-}
-else{
-document.getElementById('text').innerHTML = "Dosya boyutu 10 MB'dan büyük olamaz";
-}
-};
-	</script>
-</head>
-<body>
-  <div class="wrapper">
-    <a href="/"><img src="/s/up10.png" alt="up10" class="imaj"></a>
-      <header class="header"></header>
-      <h1>Hello There!</h1>
-			<div>
-				<p>This service allows you to store files only 1 day.</p>
-				<b>Usage:</b>
-				<p>You can use two different command to send your file. You can either <br>
-					use pipe to redirect your command (such as ls, whoami, ps) output to curl</p>
-				<code style="color:red">command | curl -F 'file=@-' https://`+r.Host+`/</code>
-				<p>Or you can redirect file to curl</p>
-				<code style="color:red">curl -F 'file=@-' https://`+r.Host+`/ < file.xxx</code>
-				<p>Most of the files can be stored such as .png, .jpg, .gif even .pdf</p>
-				<b>Or you can use traditional way to upload your file</b>
-			</div>
-					<p id="info"></p>
-          <div id="upten">
-						<input type="file" name="filename" id="file" onchange="document.getElementById('text').innerHTML = document.getElementById('file').files[0].name; ">
-
-						<p id="text">Drag your file here or click in this area.</p>
-            <button id="buttonid" onclick="uploadFile()">Upload</button>
-          </div>
-		</div>
-</body>
-</html>`)
+	htmlPage := strings.ReplaceAll(string(tmpHTMLPage), "{{Host}}", r.Host)
+	fmt.Fprint(w, htmlPage)
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
