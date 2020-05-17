@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>up10.me</title>
+  <link rel="stylesheet" href="/s/main.css">
+  <link rel="shortcut icon" type="image/png" href="/s/favicon.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="wrapper">
+    <img src="up10.png" alt="up10" class="imaj">
+      <header class="header"></header>
+      <div>
+      <h1>Hello There!</h1>
+	        <p>This service allows you to store files only 1 day.</p>
+	        <b>Usage:</b>
+          <p>You can use two different command to send your file. You can either <br>
+            use pipe to redirect your command (such as ls, whoami, ps) output to curl</p>
+	        <code style="color:red">command | curl -F 'file=@-' https://up10.me/</code>
+	        <p>Or you can redirect file to curl</p>
+	        <code style="color:red">curl -F 'file=@-' https://up10.me/ < file.xxx</code>
+          <p>Most of the files can be stored such as .png, .jpg, .gif even .pdf</p>
+        </div>
+          <form>
+          <input type="file" multiple>
+          <p>Drag your files here or click in this area.</p>
+          <button type="submit">Upload</button>
+        </form>
+  </div>
+  <!-- <footer></footer> -->
+</body>
+</html>
